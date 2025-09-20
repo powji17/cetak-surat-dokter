@@ -24,6 +24,10 @@ def format_tanggal_indonesia(tanggal_obj):
 # --- Bagian 1: Mengumpulkan Input dari Pengguna ---
 nama_pasien = input("Nama pasien: ")
 jenis_kelamin = input("Jenis kelamin pasien (L/P): ")
+if jenis_kelamin.upper() == "L":
+    jenis_kelamin = "Laki-laki"
+else:
+    jenis_kelamin = "Perempuan"
 umur_pasien = input("Umur pasien (angka): ")
 alamat_pasien = input("Alamat pasien: ")
 jumlah_hari = int(input("Jumlah hari istirahat (angka): "))
