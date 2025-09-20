@@ -6,6 +6,21 @@ from reportlab.lib.units import inch # Untuk mengatur margin atau spasi jika per
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT # Untuk perataan teks
 import os
 
+# --- Fungsi untuk mengubah format tanggal ke Bahasa Indonesia ---
+def format_tanggal_indonesia(tanggal_obj):
+    """
+    Mengubah objek date menjadi string dengan format "tanggal bulan tahun" dalam Bahasa Indonesia.
+    Contoh: 12 Maret 2025
+    """
+    nama_bulan = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ]
+    hari = tanggal_obj.day
+    bulan = nama_bulan[tanggal_obj.month - 1]
+    tahun = tanggal_obj.year
+    return f"{hari} {bulan} {tahun}"
+
 # --- Bagian 1: Mengumpulkan Input dari Pengguna ---
 nama_pasien = input("Nama pasien: ")
 jenis_kelamin = input("Jenis kelamin pasien (L/P): ")
@@ -18,16 +33,17 @@ nip_dokter = input("NIP dokter: ")
 
 # --- Bagian 2: Menghitung Tanggal Otomatis ---
 # Tanggal penerbitan surat otomatis diisi dengan tanggal hari ini
-tanggal_terbit = date.today().strftime("%d-%m-%Y")
+tanggal_terbit_obj = date.today()
+tanggal_terbit = format_tanggal_indonesia(tanggal_terbit_obj)
 
 # Mengubah tanggal mulai dari string ke objek date
-tanggal_mulai_str = date.today().strftime("%d-%m-%Y")
-tanggal_mulai_obj = datetime.strptime(tanggal_mulai_str, "%d-%m-%Y").date()
+tanggal_mulai_obj = date.today()
+tanggal_mulai = format_tanggal_indonesia(tanggal_mulai_obj)
 
 # Menghitung tanggal selesai dengan menambahkan jumlah hari ke tanggal mulai
 # timedelta(days=jumlah_hari - 1) karena hari pertama sudah dihitung
 tanggal_selesai_obj = tanggal_mulai_obj + timedelta(days=jumlah_hari - 1)
-tanggal_selesai = tanggal_selesai_obj.strftime("%d-%m-%Y")
+tanggal_selesai = format_tanggal_indonesia(tanggal_selesai_obj)
 
 # --- Bagian 3: Mengatur Format dan Gaya untuk PDF ---
 # Nama file PDF
@@ -112,7 +128,7 @@ story.append(Spacer(1, 0.2 * inch))
 
 # Keterangan Istirahat
 story.append(Paragraph(f"Berhubung sakit, perlu istirahat / dirawat selama {jumlah_hari} hari.", styles['NormalLeft']))
-story.append(Paragraph(f"Terhitung mulai tanggal {tanggal_mulai_str} s/d {tanggal_selesai}.", styles['NormalLeft']))
+story.append(Paragraph(f"Terhitung mulai tanggal {tanggal_mulai} s/d {tanggal_selesai}.", styles['NormalLeft']))
 story.append(Spacer(1, 0.2 * inch))
 story.append(Paragraph("Demikian surat keterangan ini dibuat untuk dapat dipergunakan seperlunya.", styles['NormalLeft']))
 story.append(Spacer(1, 0.5 * inch))
