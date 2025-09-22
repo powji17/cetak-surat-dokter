@@ -1,182 +1,154 @@
+import os
+import platform
 import tkinter as tk
 from tkinter import messagebox
 from datetime import date, timedelta
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-import os
-import platform
 
-# --- Fungsi untuk mengubah format tanggal ke Bahasa Indonesia ---
+# --- Bagian 1: Logika Pembuatan PDF (dijadikan sebuah fungsi) ---
+
 def format_tanggal_indonesia(tanggal_obj):
-    nama_bulan = [
-        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-    ]
-    hari = tanggal_obj.day
-    bulan = nama_bulan[tanggal_obj.month - 1]
-    tahun = tanggal_obj.year
-    return f"{hari} {bulan} {tahun}"
+    nama_bulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+    return f"{tanggal_obj.day} {nama_bulan[tanggal_obj.month - 1]} {tanggal_obj.year}"
 
-# --- Fungsi utama untuk membuat PDF (dipanggil oleh tombol) ---
-def cetak_surat():
-    nama_pasien = entry_nama_pasien.get()
-    jenis_kelamin = var_jenis_kelamin.get()
-    umur_pasien = entry_umur.get()
-    alamat_pasien = entry_alamat.get()
-    
-    if not all([nama_pasien, jenis_kelamin, umur_pasien, alamat_pasien, entry_jumlah_hari.get(), entry_nama_dokter.get(), entry_nip_dokter.get()]):
-        messagebox.showwarning("Input Kurang", "Mohon lengkapi semua data!")
-        return
-    
+def buat_surat_pdf(nama_pasien, jenis_kelamin, umur_pasien, alamat_pasien, jumlah_hari, nama_dokter, nip_dokter):
     try:
-        jumlah_hari = int(entry_jumlah_hari.get())
-    except ValueError:
-        messagebox.showerror("Input Salah", "Jumlah hari harus berupa angka!")
-        return
-
-    nama_dokter = entry_nama_dokter.get()
-    nip_dokter = entry_nip_dokter.get()
-
-    tanggal_terbit_obj = date.today()
-    tanggal_terbit = format_tanggal_indonesia(tanggal_terbit_obj)
-    tanggal_mulai_obj = date.today()
-    tanggal_mulai = format_tanggal_indonesia(tanggal_mulai_obj)
-    tanggal_selesai_obj = tanggal_mulai_obj + timedelta(days=jumlah_hari - 1)
-    tanggal_selesai = format_tanggal_indonesia(tanggal_selesai_obj)
-
-    nama_file_pdf = f"Surat_Sakit_{nama_pasien.replace(' ', '_')}.pdf"
-
-    doc = SimpleDocTemplate(
-        nama_file_pdf,
-        pagesize=A4,
-        leftMargin=0.8 * inch,
-        rightMargin=0.8 * inch,
-        topMargin=0.5 * inch,
-        bottomMargin=0.5 * inch
-    )
-
-    styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name='Header1', fontSize=12, leading=14, alignment=TA_CENTER, fontName='Helvetica-Bold'))
-    styles.add(ParagraphStyle(name='Header2', fontSize=10, leading=12, alignment=TA_CENTER, fontName='Helvetica'))
-    styles.add(ParagraphStyle(name='JudulSurat', fontSize=14, leading=16, alignment=TA_CENTER, fontName='Helvetica-Bold'))
-    styles.add(ParagraphStyle(name='NormalLeft', fontSize=10, leading=14, alignment=TA_LEFT, fontName='Helvetica'))
-    styles.add(ParagraphStyle(name='NormalRight', fontSize=10, leading=14, alignment=TA_RIGHT, fontName='Helvetica'))
-
-    story = []
-
-    story.append(Paragraph("<b>PEMERINTAH PROVINSI KALIMANTAN BARAT</b>", styles['Header1']))
-    story.append(Paragraph("<b>RUMAH SAKIT UMUM DAERAH DOKTER SOEDARSO</b>", styles['Header1']))
-    story.append(Paragraph("JL. DOKTER SOEDARSO NO. 1 - TELP. (0561) 737701 PONTIANAK 78124", styles['Header2']))
-    story.append(Spacer(1, 0.2 * inch))
-    story.append(Paragraph("<hr/>", styles['Normal']))
-    story.append(Spacer(1, 0.2 * inch))
-    story.append(Paragraph("<b>SURAT KETERANGAN SAKIT</b>", styles['JudulSurat']))
-    story.append(Spacer(1, 0.3 * inch))
-    story.append(Paragraph("Yang bertanda tangan di bawah ini. Dokter RSUD dr. Soedarso, menerangkan bahwa :", styles['NormalLeft']))
-    story.append(Spacer(1, 0.1 * inch))
-    story.append(Paragraph(f"Nama &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {nama_pasien} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; L / P : {jenis_kelamin}", styles['NormalLeft']))
-    story.append(Paragraph(f"Umur &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {umur_pasien} tahun", styles['NormalLeft']))
-    story.append(Paragraph(f"Alamat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {alamat_pasien}", styles['NormalLeft']))
-    story.append(Spacer(1, 0.2 * inch))
-    story.append(Paragraph(f"Berhubung sakit, perlu istirahat / dirawat selama {jumlah_hari} hari.", styles['NormalLeft']))
-    story.append(Paragraph(f"Terhitung mulai tanggal {tanggal_mulai} s/d {tanggal_selesai}.", styles['NormalLeft']))
-    story.append(Spacer(1, 0.2 * inch))
-    story.append(Paragraph("Demikian surat keterangan ini dibuat untuk dapat dipergunakan seperlunya.", styles['NormalLeft']))
-    story.append(Spacer(1, 0.5 * inch))
-    story.append(Paragraph(f"Pontianak, {tanggal_terbit}", styles['NormalRight']))
-    story.append(Paragraph("Dokter yang merawat,", styles['NormalRight']))
-    story.append(Spacer(1, 0.8 * inch))
-    story.append(Paragraph(f"( {nama_dokter} )", styles['NormalRight']))
-    story.append(Paragraph(f"NIP. {nip_dokter}", styles['NormalRight']))
-
-    try:
-        doc.build(story)
-        messagebox.showinfo("Berhasil!", f"Surat berhasil dibuat dan disimpan di file PDF: {nama_file_pdf}")
-        if platform.system() == 'Windows':
-            os.startfile(nama_file_pdf)
-        elif platform.system() == 'Darwin':
-            os.system(f'open {nama_file_pdf}')
-        else:
-            os.system(f'xdg-open {nama_file_pdf}')
-    except Exception as e:
-        messagebox.showerror("Terjadi Kesalahan", f"Terjadi kesalahan saat membuat PDF: {e}")
-
-# Membuat Jendela Utama GUI
-root = tk.Tk()
-root.title("Aplikasi Cetak Surat Keterangan Sakit")
-root.geometry("600x600")
-root.config(bg="#f0f0f0") # Warna latar belakang
-
-# Membuat frame utama untuk konten
-main_frame = tk.Frame(root, bg="#f0f0f0")
-main_frame.pack(expand=True, padx=20, pady=20)
-
-# Label judul aplikasi
-title_label = tk.Label(main_frame, text="Surat Keterangan Sakit", font=("Helvetica", 18, "bold"), bg="#f0f0f0", fg="#333")
-title_label.pack(pady=(0, 20))
-
-# --- FRAME UNTUK DATA PASIEN ---
-pasien_frame = tk.LabelFrame(main_frame, text="Data Pasien", font=("Helvetica", 12, "bold"), bg="white", padx=15, pady=10)
-pasien_frame.pack(fill="x", pady=10)
-
-labels_pasien = ["Nama Pasien:", "Jenis Kelamin:", "Umur Pasien (angka):", "Alamat Pasien:"]
-entries_pasien = {}
-entry_list_pasien = []
-row_num = 0
-
-for label_text in labels_pasien:
-    label = tk.Label(pasien_frame, text=label_text, font=("Helvetica", 10), bg="white")
-    label.grid(row=row_num, column=0, sticky="w", padx=5, pady=5)
-    
-    if label_text == "Jenis Kelamin:":
-        var_jenis_kelamin = tk.StringVar(value="Laki-laki")
-        radio_frame = tk.Frame(pasien_frame, bg="white")
-        radio_frame.grid(row=row_num, column=1, sticky="w", padx=5, pady=5)
-        tk.Radiobutton(radio_frame, text="Laki-laki", variable=var_jenis_kelamin, value="Laki-laki", bg="white", font=("Helvetica", 10)).pack(side="left", padx=(0, 15))
-        tk.Radiobutton(radio_frame, text="Perempuan", variable=var_jenis_kelamin, value="Perempuan", bg="white", font=("Helvetica", 10)).pack(side="left")
-    else:
-        entry = tk.Entry(pasien_frame, width=40, font=("Helvetica", 10))
-        entry.grid(row=row_num, column=1, padx=5, pady=5)
-        entry_list_pasien.append(entry)
-        if label_text == "Nama Pasien:":
-            entry_nama_pasien = entry
-        elif label_text == "Umur Pasien (angka):":
-            entry_umur = entry
-        elif label_text == "Alamat Pasien:":
-            entry_alamat = entry
-            
-    row_num += 1
-
-# --- FRAME UNTUK KETERANGAN MEDIS & DOKTER ---
-medis_frame = tk.LabelFrame(main_frame, text="Keterangan Medis & Dokter", font=("Helvetica", 12, "bold"), bg="white", padx=15, pady=10)
-medis_frame.pack(fill="x", pady=10)
-
-labels_medis = ["Jumlah Hari Istirahat:", "Nama Dokter:", "NIP Dokter:"]
-entries_medis = {}
-entry_list_medis = []
-row_num = 0
-
-for label_text in labels_medis:
-    label = tk.Label(medis_frame, text=label_text, font=("Helvetica", 10), bg="white")
-    label.grid(row=row_num, column=0, sticky="w", padx=5, pady=5)
-    entry = tk.Entry(medis_frame, width=40, font=("Helvetica", 10))
-    entry.grid(row=row_num, column=1, padx=5, pady=5)
-    entry_list_medis.append(entry)
-    
-    if label_text == "Jumlah Hari Istirahat:":
-        entry_jumlah_hari = entry
-    elif label_text == "Nama Dokter:":
-        entry_nama_dokter = entry
-    elif label_text == "NIP Dokter:":
-        entry_nip_dokter = entry
+        nama_file_pdf = f"Surat_Sakit_{nama_pasien.replace(' ', '_')}.pdf"
+        doc = SimpleDocTemplate(nama_file_pdf, pagesize=A4, leftMargin=0.8*inch, rightMargin=0.8*inch, topMargin=0.5*inch, bottomMargin=0.5*inch)
         
-    row_num += 1
+        styles = getSampleStyleSheet()
+        styles.add(ParagraphStyle(name='HeaderStyle', fontSize=10, leading=12, alignment=TA_CENTER, fontName='Helvetica'))
+        styles.add(ParagraphStyle(name='JudulSurat', fontSize=14, leading=18, alignment=TA_CENTER, fontName='Helvetica-Bold', spaceAfter=0.2*inch))
+        styles.add(ParagraphStyle(name='NormalLeft', fontSize=11, leading=15, alignment=TA_LEFT, fontName='Helvetica'))
+        styles.add(ParagraphStyle(name='NormalRight', fontSize=11, leading=15, alignment=TA_RIGHT, fontName='Helvetica'))
 
-# Tombol untuk mencetak surat
-tombol_cetak = tk.Button(main_frame, text="Cetak Surat", command=cetak_surat, bg="#4CAF50", fg="white", font=('Helvetica', 12, 'bold'), activebackground="#45a049")
-tombol_cetak.pack(pady=20, ipadx=20, ipady=5)
+        story = []
 
+        # --- Header / Kop Surat ---
+        logo1_path = "logo_kalbar.png"
+        logo2_path = "logo_rsud.png"
+        if not os.path.exists(logo1_path) or not os.path.exists(logo2_path):
+            messagebox.showerror("Error", f"File logo tidak ditemukan! Pastikan '{logo1_path}' dan '{logo2_path}' ada di folder yang sama.")
+            return
+
+        logo1 = Image(logo1_path, width=0.8*inch, height=0.8*inch)
+        logo2 = Image(logo2_path, width=0.8*inch, height=0.8*inch)
+        header_text = Paragraph("<b>PEMERINTAH PROVINSI KALIMANTAN BARAT</b><br/><b>RUMAH SAKIT UMUM DAERAH DOKTER SOEDARSO</b><br/>JL. DOKTER SOEDARSO NO. 1 - TELP. (0561) 737701 PONTIANAK 78124", styles['HeaderStyle'])
+        
+        doc_width = A4[0] - doc.leftMargin - doc.rightMargin
+        col_widths = [0.8*inch, doc_width - 1.6*inch, 0.8*inch]
+        header_table = Table([[logo1, header_text, logo2]], colWidths=col_widths)
+        header_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (0,0), 'LEFT'), ('ALIGN', (1,0), (1,0), 'CENTER'), ('ALIGN', (2,0), (2,0), 'RIGHT')]))
+        story.append(header_table)
+        story.append(Spacer(1, 0.1*inch))
+        story.append(Paragraph("<hr width='100%' color='black' size='2px'/>", styles['NormalLeft']))
+        story.append(Spacer(1, 0.1*inch))
+
+        # --- Isi Surat ---
+        tanggal_mulai_obj = date.today()
+        tanggal_selesai_obj = tanggal_mulai_obj + timedelta(days=int(jumlah_hari) - 1)
+        
+        story.append(Paragraph("<u>SURAT KETERANGAN SAKIT</u>", styles['JudulSurat']))
+        story.append(Paragraph("Yang bertanda tangan di bawah ini, Dokter RSUD dr. Soedarso, menerangkan bahwa:", styles['NormalLeft']))
+        story.append(Spacer(1, 0.2*inch))
+
+        patient_details_data = [
+            ['Nama', f': {nama_pasien}', 'L/P', f': {jenis_kelamin}'],
+            ['Umur', f': {umur_pasien} tahun', '', ''],
+            ['Alamat', f': {alamat_pasien}', '', '']
+        ]
+        patient_table = Table(patient_details_data, colWidths=[0.8*inch, 3.5*inch, 0.5*inch, 1.5*inch])
+        patient_table.setStyle(TableStyle([('FONTNAME', (0,0), (-1,-1), 'Helvetica'), ('FONTSIZE', (0,0), (-1,-1), 11), ('VALIGN', (0,0), (-1,-1), 'TOP'), ('LEFTPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 2)]))
+        story.append(patient_table)
+        story.append(Spacer(1, 0.2*inch))
+
+        story.append(Paragraph(f"Berhubung sakit, perlu istirahat / dirawat selama <b>{jumlah_hari} hari</b>.", styles['NormalLeft']))
+        story.append(Paragraph(f"Terhitung mulai tanggal {format_tanggal_indonesia(tanggal_mulai_obj)} s/d {format_tanggal_indonesia(tanggal_selesai_obj)}.", styles['NormalLeft']))
+        story.append(Spacer(1, 0.2*inch))
+        story.append(Paragraph("Demikian surat keterangan ini dibuat untuk dapat dipergunakan seperlunya.", styles['NormalLeft']))
+        story.append(Spacer(1, 0.5*inch))
+        
+        story.append(Paragraph(f"Pontianak, {format_tanggal_indonesia(date.today())}", styles['NormalRight']))
+        story.append(Paragraph("Dokter yang merawat,", styles['NormalRight']))
+        story.append(Spacer(1, 0.8*inch))
+        story.append(Paragraph(f"<b>( {nama_dokter} )</b>", styles['NormalRight']))
+        story.append(Paragraph(f"NIP. {nip_dokter}", styles['NormalRight']))
+
+        doc.build(story)
+
+        # Otomatis membuka file
+        if platform.system() == 'Windows': os.startfile(nama_file_pdf)
+        elif platform.system() == 'Darwin': os.system(f'open "{nama_file_pdf}"')
+        else: os.system(f'xdg-open "{nama_file_pdf}"')
+        
+        return True
+    except Exception as e:
+        messagebox.showerror("Pembuatan PDF Gagal", f"Terjadi kesalahan:\n{e}")
+        return False
+
+# --- Bagian 2: Form GUI dengan Tkinter ---
+
+# GANTI FUNGSI LAMA ANDA DENGAN YANG INI
+def on_generate_click():
+    # Ambil semua data dari form
+    data = {name: entry.get() for name, entry in entries.items()}
+    
+    # Validasi input tidak boleh kosong
+    for name, value in data.items():
+        if not value:
+            # Mengubah nama kunci menjadi lebih mudah dibaca untuk pesan error
+            friendly_name = name.replace('_', ' ').title()
+            messagebox.showwarning("Input Tidak Lengkap", f"Harap isi kolom '{friendly_name}' terlebih dahulu.")
+            return
+
+    # --- BAGIAN YANG DIPERBAIKI ---
+    try:
+        # 1. Validasi menggunakan kunci yang BENAR: 'jumlah_hari_istirahat'
+        int(data['jumlah_hari_istirahat'])
+    except ValueError:
+        messagebox.showwarning("Input Salah", "Kolom 'Jumlah Hari Istirahat' harus diisi dengan angka.")
+        return
+    
+    # 2. Ganti nama kunci agar sesuai dengan parameter fungsi PDF
+    data['jumlah_hari'] = data.pop('jumlah_hari_istirahat')
+    
+    # Panggil fungsi untuk membuat PDF dengan data yang sudah benar
+    buat_surat_pdf(**data)
+
+# Setup window utama
+root = tk.Tk()
+root.title("Generator Surat Sakit")
+root.geometry("400x300") # Ukuran window
+root.resizable(False, False)
+
+frame = tk.Frame(root, padx=15, pady=15)
+frame.pack(fill="both", expand=True)
+
+# Daftar input yang dibutuhkan
+labels = [
+    "Nama Pasien", "Jenis Kelamin (L/P)", "Umur Pasien",
+    "Alamat Pasien", "Jumlah Hari Istirahat", "Nama Dokter", "NIP Dokter"
+]
+
+entries = {}
+# Buat label dan entry box untuk setiap input
+for i, text in enumerate(labels):
+    label_key = text.lower().replace(" (l/p)", "").replace(" ", "_")
+    
+    label = tk.Label(frame, text=f"{text}:")
+    label.grid(row=i, column=0, sticky="w", pady=2)
+    
+    entry = tk.Entry(frame, width=40)
+    entry.grid(row=i, column=1, sticky="w", pady=2)
+    entries[label_key] = entry
+
+# Tombol untuk membuat PDF
+generate_button = tk.Button(frame, text="Buat dan Buka PDF", command=on_generate_click, height=2, bg="#4CAF50", fg="white", font=("Helvetica", 10, "bold"))
+generate_button.grid(row=len(labels), columnspan=2, sticky="ew", pady=15)
+
+# Jalankan aplikasi GUI
 root.mainloop()
