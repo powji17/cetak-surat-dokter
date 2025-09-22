@@ -6,6 +6,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.platypus import Image
 import os
 import platform
 
@@ -60,15 +61,32 @@ def cetak_surat():
 
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='Header1', fontSize=12, leading=14, alignment=TA_CENTER, fontName='Helvetica-Bold'))
-    styles.add(ParagraphStyle(name='Header2', fontSize=10, leading=12, alignment=TA_CENTER, fontName='Helvetica'))
+    styles.add(ParagraphStyle(name='Header2', fontSize=8, leading=12, alignment=TA_CENTER, fontName='Helvetica'))
     styles.add(ParagraphStyle(name='JudulSurat', fontSize=14, leading=16, alignment=TA_CENTER, fontName='Helvetica-Bold'))
     styles.add(ParagraphStyle(name='NormalLeft', fontSize=10, leading=14, alignment=TA_LEFT, fontName='Helvetica'))
     styles.add(ParagraphStyle(name='NormalRight', fontSize=10, leading=14, alignment=TA_RIGHT, fontName='Helvetica'))
 
     story = []
 
-    story.append(Paragraph("<b>PEMERINTAH PROVINSI KALIMANTAN BARAT</b>", styles['Header1']))
-    story.append(Paragraph("<b>RUMAH SAKIT UMUM DAERAH DOKTER SOEDARSO</b>", styles['Header1']))
+    # Tambahkan logo di kiri & kanan
+    logo_kalbar = Image("logo-kalbar.png", width=50, height=50)
+    logo_rsud = Image("logo-rsud.png", width=50, height=50)
+
+    from reportlab.platypus import Table
+
+    # Buat tabel 1 baris, 3 kolom: logo kiri, teks tengah, logo kanan
+    header_table = Table(
+        [[logo_kalbar,
+        Paragraph(
+            "<b>PEMERINTAH PROVINSI KALIMANTAN BARAT<br/>"
+            "RUMAH SAKIT UMUM DAERAH DOKTER SOEDARSO</b>",
+            styles['Header1']),
+        logo_rsud]],
+        colWidths=[1*inch, 4.5*inch, 1*inch]
+    )
+    header_table.hAlign = 'CENTER'
+
+    story.append(header_table)
     story.append(Paragraph("JL. DOKTER SOEDARSO NO. 1 - TELP. (0561) 737701 PONTIANAK 78124", styles['Header2']))
     story.append(Spacer(1, 0.2 * inch))
     story.append(Paragraph("<hr/>", styles['Normal']))
